@@ -21,3 +21,4 @@ class ReportInput(BaseModel):
     test_results: List[TestResult]
     weak_points: str
     plan: str
+    reference_note: str = ""

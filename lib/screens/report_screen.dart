@@ -31,7 +31,7 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   final ReportApi reportApi = ReportApi(
-    baseUrl: 'http://127.0.0.1:8000',
+    baseUrl: 'https://academy-text-generator-api.onrender.com',
   );
 
   bool isGeneratingComment = false;
@@ -76,6 +76,10 @@ class _ReportScreenState extends State<ReportScreen> {
   final TextEditingController testCorrect2Controller =
       TextEditingController(text: '19');
 
+  final TextEditingController referenceNoteController = TextEditingController(
+    text: '이번 월말평가는 빠른 시간 안에 잘 풀었습니다',
+  );
+
   final TextEditingController weakPointsController = TextEditingController(
     text: '도형의 이동 단원에서 오답과 모르는 문제가 많이 나오고 있음',
   );
@@ -113,6 +117,7 @@ class _ReportScreenState extends State<ReportScreen> {
     testTotal2Controller.dispose();
     testCorrect2Controller.dispose();
 
+    referenceNoteController.dispose();
     weakPointsController.dispose();
     planController.dispose();
     commentController.dispose();
@@ -264,11 +269,14 @@ class _ReportScreenState extends State<ReportScreen> {
         ],
         weakPoints: weakPointsController.text.trim(),
         plan: planController.text.trim(),
+        referenceNote: referenceNoteController.text.trim(),
       );
 
       setState(() {
         commentController.text = comment;
       });
+
+      generateReport();
 
       if (!mounted) return;
 
@@ -529,6 +537,11 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
 
             buildSectionTitle('AI 코멘트 생성 정보'),
+            buildTextField(
+              label: 'AI가 참고할 초반 내용',
+              controller: referenceNoteController,
+              maxLines: 2,
+            ),
             buildTextField(
               label: '보완이 필요한 부분',
               controller: weakPointsController,

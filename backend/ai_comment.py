@@ -1,4 +1,5 @@
 import os
+import time
 from dotenv import load_dotenv
 from google import genai
 
@@ -9,12 +10,12 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY가 .env 파일에 설정되어 있지 않습니다.")
+    raise ValueError("GEMINI_API_KEY가 환경변수에 설정되어 있지 않습니다.")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-def generate_ai_comment(data: ReportInput) -> str:
+def build_prompt(data: ReportInput) -> str:
     test_summary = "\n".join(
         [
             f"- {result.unit}: {result.total}문항 중 {result.correct}개 정답"
@@ -26,11 +27,11 @@ def generate_ai_comment(data: ReportInput) -> str:
         [f"- {unit}" for unit in data.units if unit.strip()]
     )
 
-    prompt = f"""
+    return f"""
 너는 초등 수학 학원 선생님이다.
 학부모에게 보낼 주간 학습 안내 문자에 들어갈 코멘트를 작성해라.
 
-인사로 시작하지 말고 '이번 월말평가는'으로 문장을 시작하라
+아래 작성 예시의 말투와 구조를 최대한 따라라.
 
 작성 예시 1:
 -이번 월말평가는 응용단계로 월말평가를 실시하였습니다 
@@ -143,15 +144,19 @@ C단계문제들도 잘 풀고 있으며
 4단원은 다양한문제 풀이로 다시 학습할 예정입니다
 꾸준한 학습 이어갈수 있도록 지도하겠습니다.
 
-조건:
-- 존댓말 사용
-- 너무 과장하지 말 것
-- 부정적인 표현은 부드럽게 표현할 것
-- 4~6문장 정도로 작성할 것
-- 학생 이름을 과하게 반복하지 말 것
-- 학부모가 불안해하지 않도록 작성할 것
-- 마지막 문장은 앞으로의 지도 계획으로 마무리할 것
-- 출력은 코멘트 본문만 할 것
+작성 규칙:
+- 출력은 코멘트 본문만 작성할 것
+- 첫 문장은 반드시 "-이번"으로 시작할 것
+- "AI가 참고해야 할 초반 내용"은 첫 문장을 만드는 데 가장 우선적으로 사용할 것
+- 첫 문장은 사용자가 입력한 초반 내용을 바탕으로 "이번 월말평가는 ~하였습니다", "이번 수업에서는 ~하였습니다"처럼 자연스럽게 작성할 것
+- 사용자가 입력한 초반 내용을 그대로 복사하지 말고 학부모 문자 말투로 자연스럽게 다듬을 것
+- 4~6문장으로 작성할 것
+- 너무 AI처럼 과장된 표현을 쓰지 말 것
+- "매우 훌륭합니다", "탁월합니다", "놀라운 성과입니다" 같은 과한 표현 금지
+- 학원에서 학부모에게 문자 보내는 느낌으로 작성할 것
+- 문장 순서는 초반 평가 내용 → 꾸준한 학습 필요성 → 보완 단원 → 향후 지도 계획 → 마무리 순서로 작성할 것
+- 보완점은 부드럽게 말하되 숨기지 말 것
+- 마지막 문장은 "꾸준한 학습 이어갈수 있도록 지도하겠습니다."와 비슷하게 끝낼 것
 - 제목, 번호, 따옴표, 마크다운 기호는 출력하지 말 것
 
 학생 정보:
@@ -167,16 +172,41 @@ C단계문제들도 잘 풀고 있으며
 - 과제 완성도: {data.homework_quality}
 - 평가 결과:
 {test_summary}
+- AI가 참고해야 할 초반 내용: {data.reference_note}
 - 보완이 필요한 부분: {data.weak_points}
 - 향후 지도 계획: {data.plan}
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
 
-    if not response.text:
-        raise ValueError("Gemini 응답이 비어 있습니다.")
+def generate_ai_comment(data: ReportInput) -> str:
+    prompt = build_prompt(data)
 
-    return response.text.strip()
+    models = [
+        "gemini-2.5-flash",
+        "gemini-1.5-flash",
+    ]
+
+    last_error = None
+
+    for model in models:
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+
+                if not response.text:
+                    raise ValueError("Gemini 응답이 비어 있습니다.")
+
+                return response.text.strip()
+
+            except Exception as e:
+                last_error = e
+                print(
+                    f"GEMINI ERROR | model={model} | attempt={attempt + 1} | error={repr(e)}"
+                )
+
+                time.sleep(1.5)
+
+    raise RuntimeError(f"Gemini 코멘트 생성 실패: {repr(last_error)}")
