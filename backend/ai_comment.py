@@ -181,8 +181,8 @@ def generate_ai_comment(data: ReportInput) -> str:
     prompt = build_prompt(data)
 
     models = [
-        "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
+        "gemini-2.5-flash",
     ]
 
     last_error = None
