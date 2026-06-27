@@ -182,7 +182,7 @@ def generate_ai_comment(data: ReportInput) -> str:
 
     models = [
         "gemini-2.5-flash",
-        "gemini-1.5-flash",
+        "gemini-2.5-flash-lite",
     ]
 
     last_error = None
