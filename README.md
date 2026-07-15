@@ -28,7 +28,9 @@ Gemini가 학원 말투에 맞춘 코멘트를 대신 써 줍니다.
 | 영역 | 스택 | 설명 |
 | --- | --- | --- |
 | 앱 | Flutter (Dart) | 입력 폼 + 안내문 생성 화면 |
-| 서버 | FastAPI (Python) | Gemini 호출해 학부모 코멘트 작성 |
+| 서버 | FastAPI (Python), Render 배포 | Gemini 호출해 학부모 코멘트 작성 |
+
+서버는 Render에 배포되어 상시 떠 있으므로, 앱을 쓰는 쪽에서 백엔드를 따로 실행할 필요는 없습니다.
 
 동작 순서는 이렇습니다.
 
@@ -54,7 +56,27 @@ backend/
 
 ## 실행 방법
 
-### 백엔드
+**백엔드는 이미 Render에 배포되어 상시 동작 중입니다.** 앱만 실행하면 AI 코멘트까지 바로
+쓸 수 있고, `uvicorn`을 따로 띄울 필요가 없습니다.
+
+```bash
+flutter pub get
+flutter run
+```
+
+앱은 배포된 백엔드(`https://academy-text-generator-api.onrender.com`)를 바라보도록
+[report_screen.dart](lib/screens/report_screen.dart#L34)에 `baseUrl`이 지정돼 있습니다.
+
+> **첫 요청이 느린 이유**
+> Render 무료 플랜이라 15분간 요청이 없으면 인스턴스가 잠듭니다. 그 뒤 첫 "AI 코멘트 생성"은
+> 서버가 깨어나는 시간(대략 50초)만큼 기다려야 합니다. 앱은 요청당 60초 타임아웃에 1회
+> 재시도하므로([report_api.dart](lib/services/report_api.dart#L50-L63)) 보통은 그 안에
+> 응답이 오지만, 오랜만에 켰을 때 한 번 실패하고 두 번째에 되는 건 정상입니다.
+> 두 번째 요청부터는 바로 응답합니다.
+
+### 백엔드를 로컬에서 띄우는 경우
+
+프롬프트나 API를 고칠 때만 필요합니다.
 
 ```bash
 cd backend
@@ -65,17 +87,14 @@ uvicorn main:app --reload # http://127.0.0.1:8000
 
 `GEMINI_API_KEY`가 없으면 `ai_comment.py`가 import 시점에 바로 에러를 냅니다.
 키는 [Google AI Studio](https://aistudio.google.com/apikey)에서 발급받습니다.
+앱을 로컬 서버에 붙이려면 `baseUrl`을 `http://127.0.0.1:8000`으로 바꾸세요.
 
-### 앱
+### 배포
 
-```bash
-flutter pub get
-flutter run
-```
-
-앱은 기본적으로 배포된 백엔드(`https://academy-text-generator-api.onrender.com`)를 바라봅니다.
-로컬 서버로 붙이려면 [report_screen.dart](lib/screens/report_screen.dart#L34)의 `baseUrl`을
-`http://127.0.0.1:8000`으로 바꾸세요.
+백엔드는 Render의 웹 서비스로 올라가 있습니다. `GEMINI_API_KEY`는 Render 대시보드의
+Environment에 등록된 값을 쓰며, 로컬 `backend/.env`와는 별개입니다. 따라서 키를 교체할 때는
+양쪽을 모두 바꿔야 합니다. 배포 설정(자동 배포 여부, 빌드/시작 명령)은 Render 대시보드에서
+확인하세요.
 
 ## API
 
