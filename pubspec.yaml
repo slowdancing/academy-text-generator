@@ -1,5 +1,5 @@
 name: academy_text_generator
-description: "A new Flutter project."
+description: "학원 주간 학습 안내문 생성기 - 폼 입력으로 안내문 문자와 AI 학부모 코멘트를 만듭니다."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
