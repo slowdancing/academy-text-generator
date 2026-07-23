@@ -22,3 +22,7 @@ class ReportInput(BaseModel):
     weak_points: str
     plan: str
     reference_note: str = ""
+    # 아래 두 값이 함께 채워지면, 코멘트를 새로 쓰지 않고 previous_comment를
+    # revision_request(선생님이 자연어로 적은 수정 지시)에 맞춰 다듬는다.
+    previous_comment: str = ""
+    revision_request: str = ""

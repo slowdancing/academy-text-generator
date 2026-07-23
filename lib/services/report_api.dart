@@ -22,6 +22,8 @@ class ReportApi {
     required String weakPoints,
     required String plan,
     required String referenceNote,
+    String previousComment = '',
+    String revisionRequest = '',
   }) async {
     final body = {
       'student_name': studentName,
@@ -37,6 +39,8 @@ class ReportApi {
       'weak_points': weakPoints,
       'plan': plan,
       'reference_note': referenceNote,
+      'previous_comment': previousComment,
+      'revision_request': revisionRequest,
     };
 
     return _postGenerateCommentWithRetry(body);

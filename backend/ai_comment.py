@@ -27,7 +27,7 @@ def build_prompt(data: ReportInput) -> str:
         [f"- {unit}" for unit in data.units if unit.strip()]
     )
 
-    return f"""
+    base_prompt = f"""
 너는 초등 수학 학원 선생님이다.
 학부모에게 보낼 주간 학습 안내 문자에 들어갈 코멘트를 작성해라.
 
@@ -176,13 +176,37 @@ C단계문제들도 잘 풀고 있으며
 - 향후 지도 계획: {data.plan}
 """
 
+    revision_request = data.revision_request.strip()
+    previous_comment = data.previous_comment.strip()
+
+    if revision_request:
+        base_prompt += f"""
+
+지금은 코멘트를 처음부터 새로 쓰는 것이 아니라, 아래 "이전 코멘트"를 선생님의
+수정 지시에 맞게 고쳐 쓰는 상황이다.
+
+이전 코멘트:
+{previous_comment}
+
+선생님의 수정 지시:
+{revision_request}
+
+수정 규칙:
+- 이전 코멘트를 기반으로, 수정 지시에서 요청한 부분만 반영해 자연스럽게 고칠 것
+- 수정 지시와 무관한 나머지 내용과 말투, 문장 순서는 최대한 유지할 것
+- 위에 있는 작성 규칙(말투, 문장 수, 과장 표현 금지, 마무리 문장 등)은 그대로 지킬 것
+- 수정된 코멘트 본문만 출력하고, 설명이나 변경 내역은 쓰지 말 것
+"""
+
+    return base_prompt
+
 
 def generate_ai_comment(data: ReportInput) -> str:
     prompt = build_prompt(data)
 
     models = [
-        "gemini-2.5-flash-lite",
         "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
     ]
 
     last_error = None

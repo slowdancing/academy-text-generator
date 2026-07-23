@@ -93,6 +93,10 @@ class _ReportScreenState extends State<ReportScreen> {
         '이번 월말평가는 빠른 시간 안에 잘 풀었습니다.\n꾸준한 학습으로 응용서 마무리가 되면 실력이 더 향상될 수 있을 거라 생각됩니다.\n응용서도 역시 도형의 이동 단원에서 오답과 모르는 문제들이 많이 나오고 있는 상황입니다.\n4단원은 다양한 문제 풀이로 다시 학습할 예정입니다.\n꾸준한 학습 이어갈 수 있도록 지도하겠습니다.',
   );
 
+  // 생성된 코멘트를 보고 자연어로 적는 수정 지시 (예: "도형 얘기를 더 강조해줘")
+  final TextEditingController revisionRequestController =
+      TextEditingController();
+
   String generatedText = '';
 
   @override
@@ -121,6 +125,7 @@ class _ReportScreenState extends State<ReportScreen> {
     weakPointsController.dispose();
     planController.dispose();
     commentController.dispose();
+    revisionRequestController.dispose();
 
     super.dispose();
   }
@@ -239,7 +244,32 @@ class _ReportScreenState extends State<ReportScreen> {
     });
   }
 
-  Future<void> generateAiComment() async {
+  Future<void> generateAiComment({bool isRevision = false}) async {
+    // 수정 모드일 때 넘길 값: 지금 코멘트와 선생님이 적은 자연어 지시
+    final revisionRequest =
+        isRevision ? revisionRequestController.text.trim() : '';
+    final previousComment = isRevision ? commentController.text.trim() : '';
+
+    if (isRevision) {
+      if (previousComment.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('먼저 코멘트를 생성하거나 입력해주세요.'),
+          ),
+        );
+        return;
+      }
+
+      if (revisionRequest.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('반영할 수정 요청을 입력해주세요.'),
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() {
       isGeneratingComment = true;
     });
@@ -270,10 +300,15 @@ class _ReportScreenState extends State<ReportScreen> {
         weakPoints: weakPointsController.text.trim(),
         plan: planController.text.trim(),
         referenceNote: referenceNoteController.text.trim(),
+        previousComment: previousComment,
+        revisionRequest: revisionRequest,
       );
 
       setState(() {
         commentController.text = comment;
+        if (isRevision) {
+          revisionRequestController.clear();
+        }
       });
 
       generateReport();
@@ -281,8 +316,8 @@ class _ReportScreenState extends State<ReportScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('AI 코멘트가 생성되었습니다.'),
+        SnackBar(
+          content: Text(isRevision ? '수정 요청을 반영했습니다.' : 'AI 코멘트가 생성되었습니다.'),
         ),
       );
     } catch (e) {
@@ -568,6 +603,25 @@ class _ReportScreenState extends State<ReportScreen> {
                 onPressed: isGeneratingComment ? null : generateAiComment,
                 child: Text(
                   isGeneratingComment ? 'AI 코멘트 생성 중...' : 'AI 코멘트 생성',
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            buildTextField(
+              label: '수정 요청 (예: 도형 부분을 더 강조해줘, 좀 더 부드럽게 써줘)',
+              controller: revisionRequestController,
+              maxLines: 2,
+            ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: isGeneratingComment
+                    ? null
+                    : () => generateAiComment(isRevision: true),
+                child: Text(
+                  isGeneratingComment ? '수정 반영 중...' : '수정 요청 반영해 다시 생성',
                 ),
               ),
             ),
