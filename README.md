@@ -120,11 +120,19 @@ Environment에 등록된 값을 쓰며, 로컬 `backend/.env`와는 별개입니
   "test_results": [{ "unit": "연립방정식", "total": 20, "correct": 18 }],
   "weak_points": "활용 문제 식 세우기",
   "plan": "다음 주 일차함수 진도",
-  "reference_note": ""
+  "reference_note": "",
+  "previous_comment": "",
+  "revision_request": ""
 }
 ```
 
 응답: `{"comment": "..."}`
+
+`previous_comment`와 `revision_request`는 선택 필드(기본값 `""`)입니다. 둘 다 비어 있으면
+입력값을 바탕으로 코멘트를 새로 씁니다. 두 값이 함께 채워지면 새로 쓰지 않고,
+`previous_comment`를 `revision_request`(선생님이 자연어로 적은 수정 지시, 예: "도형 부분을
+더 강조해줘")에 맞춰 다듬어 돌려줍니다. 앱의 "수정 요청 반영해 다시 생성" 버튼이 이 방식으로
+동작합니다.
 
 코멘트는 `gemini-2.5-flash-lite`로 먼저 시도하고, 실패하면 `gemini-2.5-flash`로
 넘어갑니다. 모델당 3회까지 재시도합니다.
